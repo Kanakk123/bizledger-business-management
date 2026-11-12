@@ -243,19 +243,22 @@ export async function receivePurchaseOrderItems(id, data, userId, db = prisma) {
 export async function createPurchaseInvoice(id, userId, db = prisma) {
   try { return await db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM purchase_orders WHERE id = ${id} FOR UPDATE`;
-    const order = await tx.purchaseOrder.findUnique({ where: { id }, include: { items: true, invoice: { include: { items: true, payments: true } } } });
+    const order = await tx.purchaseOrder.findUnique({ where: { id }, include: { supplier: true, items: true, invoice: { include: { items: true, payments: true } } } });
     if (!order) throw new PurchaseOrderError("Purchase order not found", 404);
     if (order.invoice) return { invoice: order.invoice, created: false };
     if (["DRAFT", "CANCELLED"].includes(order.status)) throw new PurchaseOrderError("An invoice can only be created for a sent or confirmed purchase order", 409);
     const invoice = await tx.invoice.create({
       data: {
         invoiceNumber: stamp("PINV"), type: "PURCHASE", status: "UNPAID", purchaseOrderId: id,
+        partnerName: order.supplier.name, partnerCompany: order.supplier.companyName, partnerEmail: order.supplier.email, partnerPhone: order.supplier.phone,
+        partnerAddress: [order.supplier.address, order.supplier.city, order.supplier.state, order.supplier.postalCode, order.supplier.country].filter(Boolean).join(", ") || null,
+        partnerTaxId: order.supplier.taxRegistration, paymentTerms: order.supplier.paymentTerms,
         subtotal: order.subtotal, discountTotal: order.discountTotal, taxTotal: order.taxTotal,
         additionalCharges: order.additionalCharges, totalAmount: order.totalAmount,
         items: { create: order.items.map((item) => {
           const line = calculateLine({ quantity: item.orderedQuantity.toString(), unitPrice: item.unitPrice.toString(), discountPercent: item.discountPercent.toString(), taxRate: item.taxRate.toString() });
           return {
-            productName: item.productName, sku: item.sku, quantity: item.orderedQuantity,
+            productName: item.productName, sku: item.sku, description: item.productDescription, quantity: item.orderedQuantity,
             unitPrice: item.unitPrice, discountAmount: line.discountAmount.toFixed(2), taxRate: item.taxRate,
             taxAmount: line.taxAmount.toFixed(2), lineTotal: item.lineTotal,
           };

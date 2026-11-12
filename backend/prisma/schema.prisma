@@ -77,7 +77,6 @@ enum InventoryTransactionType {
   @@map("inventory_transaction_type")
 }
 
-
 model User {
   id           Int      @id @default(autoincrement())
   name         String   @db.VarChar(100)
@@ -88,10 +87,11 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  auditLogs AuditLog[]
-  goodsReceipts GoodsReceipt[]
+  auditLogs         AuditLog[]
+  goodsReceipts     GoodsReceipt[]
   salesFulfillments SalesFulfillment[]
-  salesReturns SalesReturn[]
+  salesReturns      SalesReturn[]
+  payments          Payment[]
 
   @@map("users")
 }
@@ -110,54 +110,54 @@ model Category {
 }
 
 model Product {
-  id              Int      @id @default(autoincrement())
-  name            String   @db.VarChar(150)
-  description     String?  @db.Text
-  sku             String   @unique @db.VarChar(60)
-  unit            String   @db.VarChar(30)
-  specifications  String?  @db.Text
-  purchasePrice   Decimal  @map("purchase_price") @db.Decimal(12, 2)
-  sellingPrice    Decimal  @map("selling_price") @db.Decimal(12, 2)
-  taxRate         Decimal  @default(0) @map("tax_rate") @db.Decimal(5, 2)
-  stockQuantity   Decimal  @default(0) @map("stock_quantity") @db.Decimal(12, 3)
-  minStockLevel   Decimal  @default(0) @map("min_stock_level") @db.Decimal(12, 3)
-  remarks         String?  @db.Text
-  isActive        Boolean  @default(true) @map("is_active")
-  categoryId      Int?     @map("category_id")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id             Int      @id @default(autoincrement())
+  name           String   @db.VarChar(150)
+  description    String?  @db.Text
+  sku            String   @unique @db.VarChar(60)
+  unit           String   @db.VarChar(30)
+  specifications String?  @db.Text
+  purchasePrice  Decimal  @map("purchase_price") @db.Decimal(12, 2)
+  sellingPrice   Decimal  @map("selling_price") @db.Decimal(12, 2)
+  taxRate        Decimal  @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  stockQuantity  Decimal  @default(0) @map("stock_quantity") @db.Decimal(12, 3)
+  minStockLevel  Decimal  @default(0) @map("min_stock_level") @db.Decimal(12, 3)
+  remarks        String?  @db.Text
+  isActive       Boolean  @default(true) @map("is_active")
+  categoryId     Int?     @map("category_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
-  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category              Category?              @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  purchaseOrderItems    PurchaseOrderItem[]
+  salesOrderItems       SalesOrderItem[]
+  inventoryTransactions InventoryTransaction[]
 
   @@index([name])
   @@index([categoryId])
   @@map("products")
-  purchaseOrderItems PurchaseOrderItem[]
-  salesOrderItems    SalesOrderItem[]
-  inventoryTransactions InventoryTransaction[]
 }
 
 model Supplier {
-  id             Int           @id @default(autoincrement())
-  name           String        @db.VarChar(150)
-  companyName    String?       @map("company_name") @db.VarChar(150)
-  email          String?       @db.VarChar(150)
-  phone          String?       @db.VarChar(20)
-  address        String?       @db.Text
-  city           String?       @db.VarChar(100)
-  state          String?       @db.VarChar(100)
-  postalCode     String?       @map("postal_code") @db.VarChar(30)
-  country        String?       @db.VarChar(100)
-  taxRegistration String?      @map("tax_registration") @db.VarChar(50)
-  paymentTerms   String?       @map("payment_terms") @db.VarChar(100)
-  notes          String?       @db.Text
-  status         PartnerStatus @default(ACTIVE)
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
+  id              Int             @id @default(autoincrement())
+  name            String          @db.VarChar(150)
+  companyName     String?         @map("company_name") @db.VarChar(150)
+  email           String?         @db.VarChar(150)
+  phone           String?         @db.VarChar(20)
+  address         String?         @db.Text
+  city            String?         @db.VarChar(100)
+  state           String?         @db.VarChar(100)
+  postalCode      String?         @map("postal_code") @db.VarChar(30)
+  country         String?         @db.VarChar(100)
+  taxRegistration String?         @map("tax_registration") @db.VarChar(50)
+  paymentTerms    String?         @map("payment_terms") @db.VarChar(100)
+  notes           String?         @db.Text
+  status          PartnerStatus   @default(ACTIVE)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  purchaseOrders  PurchaseOrder[]
 
   @@index([name])
   @@map("suppliers")
-  purchaseOrders PurchaseOrder[]
 }
 
 model Buyer {
@@ -177,20 +177,20 @@ model Buyer {
   status          PartnerStatus @default(ACTIVE)
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
+  salesOrders     SalesOrder[]
 
   @@index([name])
   @@map("buyers")
-  salesOrders SalesOrder[]
 }
 
 model AuditLog {
-  id         Int      @id @default(autoincrement())
-  userId     Int?     @map("user_id")
-  action     String   @db.VarChar(100)
-  entity     String   @db.VarChar(100)
-  entityId   String?  @map("entity_id") @db.VarChar(100)
-  metadata   Json?
-  createdAt  DateTime @default(now()) @map("created_at")
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  action    String   @db.VarChar(100)
+  entity    String   @db.VarChar(100)
+  entityId  String?  @map("entity_id") @db.VarChar(100)
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
@@ -199,27 +199,28 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
-model PurchaseOrder {
-  id                  Int                 @id @default(autoincrement())
-  orderNumber         String              @unique @map("order_number") @db.VarChar(50)
-  supplierId          Int                 @map("supplier_id")
-  status              PurchaseOrderStatus @default(DRAFT)
-  orderDate           DateTime            @default(now()) @map("order_date")
-  expectedDelivery    DateTime?           @map("expected_delivery")
-  subtotal            Decimal             @default(0) @db.Decimal(12, 2)
-  discountTotal       Decimal             @default(0) @map("discount_total") @db.Decimal(12, 2)
-  taxTotal            Decimal             @default(0) @map("tax_total") @db.Decimal(12, 2)
-  additionalCharges   Decimal             @default(0) @map("additional_charges") @db.Decimal(12, 2)
-  totalAmount         Decimal             @default(0) @map("total_amount") @db.Decimal(12, 2)
-  remarks             String?             @db.Text
-  deliveryInstructions String?            @map("delivery_instructions") @db.Text
-  createdAt           DateTime            @default(now()) @map("created_at")
-  updatedAt           DateTime            @updatedAt @map("updated_at")
 
-  supplier            Supplier            @relation(fields: [supplierId], references: [id])
-  items               PurchaseOrderItem[]
-  invoice             Invoice?
-  receipts            GoodsReceipt[]
+model PurchaseOrder {
+  id                   Int                 @id @default(autoincrement())
+  orderNumber          String              @unique @map("order_number") @db.VarChar(50)
+  supplierId           Int                 @map("supplier_id")
+  status               PurchaseOrderStatus @default(DRAFT)
+  orderDate            DateTime            @default(now()) @map("order_date")
+  expectedDelivery     DateTime?           @map("expected_delivery")
+  subtotal             Decimal             @default(0) @db.Decimal(12, 2)
+  discountTotal        Decimal             @default(0) @map("discount_total") @db.Decimal(12, 2)
+  taxTotal             Decimal             @default(0) @map("tax_total") @db.Decimal(12, 2)
+  additionalCharges    Decimal             @default(0) @map("additional_charges") @db.Decimal(12, 2)
+  totalAmount          Decimal             @default(0) @map("total_amount") @db.Decimal(12, 2)
+  remarks              String?             @db.Text
+  deliveryInstructions String?             @map("delivery_instructions") @db.Text
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+
+  supplier Supplier            @relation(fields: [supplierId], references: [id])
+  items    PurchaseOrderItem[]
+  invoice  Invoice?
+  receipts GoodsReceipt[]
 
   @@index([supplierId])
   @@index([status])
@@ -227,22 +228,22 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id                Int           @id @default(autoincrement())
-  purchaseOrderId   Int           @map("purchase_order_id")
-  productId         Int           @map("product_id")
-  productName       String        @map("product_name") @db.VarChar(255)
-  sku               String        @db.VarChar(100)
-  productDescription String?       @map("product_description") @db.Text
-  orderedQuantity   Decimal       @map("ordered_quantity") @db.Decimal(12, 3)
-  receivedQuantity  Decimal       @default(0) @map("received_quantity") @db.Decimal(12, 3)
-  unitPrice         Decimal       @map("unit_price") @db.Decimal(12, 2)
-  discountPercent   Decimal       @default(0) @map("discount_percent") @db.Decimal(5, 2)
-  taxRate           Decimal       @default(0) @map("tax_rate") @db.Decimal(5, 2)
-  lineTotal         Decimal       @map("line_total") @db.Decimal(12, 2)
+  id                 Int     @id @default(autoincrement())
+  purchaseOrderId    Int     @map("purchase_order_id")
+  productId          Int     @map("product_id")
+  productName        String  @map("product_name") @db.VarChar(255)
+  sku                String  @db.VarChar(100)
+  productDescription String? @map("product_description") @db.Text
+  orderedQuantity    Decimal @map("ordered_quantity") @db.Decimal(12, 3)
+  receivedQuantity   Decimal @default(0) @map("received_quantity") @db.Decimal(12, 3)
+  unitPrice          Decimal @map("unit_price") @db.Decimal(12, 2)
+  discountPercent    Decimal @default(0) @map("discount_percent") @db.Decimal(5, 2)
+  taxRate            Decimal @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  lineTotal          Decimal @map("line_total") @db.Decimal(12, 2)
 
-  purchaseOrder     PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
-  product           Product       @relation(fields: [productId], references: [id])
-  receipts          GoodsReceiptItem[]
+  purchaseOrder PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id])
+  product       Product            @relation(fields: [productId], references: [id])
+  receipts      GoodsReceiptItem[]
 
   @@index([purchaseOrderId])
   @@index([productId])
@@ -250,16 +251,16 @@ model PurchaseOrderItem {
 }
 
 model GoodsReceipt {
-  id              Int                @id @default(autoincrement())
-  receiptNumber   String             @unique @map("receipt_number") @db.VarChar(50)
-  idempotencyKey  String             @unique @map("idempotency_key") @db.VarChar(100)
-  purchaseOrderId Int                @map("purchase_order_id")
-  receivedById    Int?               @map("received_by_id")
-  receivedAt      DateTime           @default(now()) @map("received_at")
-  notes           String?            @db.Text
+  id              Int      @id @default(autoincrement())
+  receiptNumber   String   @unique @map("receipt_number") @db.VarChar(50)
+  idempotencyKey  String   @unique @map("idempotency_key") @db.VarChar(100)
+  purchaseOrderId Int      @map("purchase_order_id")
+  receivedById    Int?     @map("received_by_id")
+  receivedAt      DateTime @default(now()) @map("received_at")
+  notes           String?  @db.Text
 
-  purchaseOrder PurchaseOrder        @relation(fields: [purchaseOrderId], references: [id])
-  receivedBy    User?                @relation(fields: [receivedById], references: [id], onDelete: SetNull)
+  purchaseOrder PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id])
+  receivedBy    User?              @relation(fields: [receivedById], references: [id], onDelete: SetNull)
   items         GoodsReceiptItem[]
 
   @@index([purchaseOrderId, receivedAt])
@@ -267,10 +268,10 @@ model GoodsReceipt {
 }
 
 model GoodsReceiptItem {
-  id                  Int               @id @default(autoincrement())
-  goodsReceiptId      Int               @map("goods_receipt_id")
-  purchaseOrderItemId Int               @map("purchase_order_item_id")
-  quantity            Decimal           @db.Decimal(12, 3)
+  id                  Int     @id @default(autoincrement())
+  goodsReceiptId      Int     @map("goods_receipt_id")
+  purchaseOrderItemId Int     @map("purchase_order_item_id")
+  quantity            Decimal @db.Decimal(12, 3)
 
   goodsReceipt      GoodsReceipt      @relation(fields: [goodsReceiptId], references: [id])
   purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id])
@@ -281,27 +282,27 @@ model GoodsReceiptItem {
 }
 
 model SalesOrder {
-  id                    Int             @id @default(autoincrement())
-  orderNumber           String          @unique @map("order_number") @db.VarChar(50)
-  buyerId               Int             @map("buyer_id")
-  status                SalesOrderStatus @default(NEW)
-  orderDate             DateTime        @default(now()) @map("order_date")
-  deliveryDate          DateTime?       @map("delivery_date")
-  subtotal              Decimal         @default(0) @db.Decimal(12, 2)
-  discountTotal         Decimal         @default(0) @map("discount_total") @db.Decimal(12, 2)
-  taxTotal              Decimal         @default(0) @map("tax_total") @db.Decimal(12, 2)
-  shippingCharges       Decimal         @default(0) @map("shipping_charges") @db.Decimal(12, 2)
-  totalAmount           Decimal         @default(0) @map("total_amount") @db.Decimal(12, 2)
-  remarks               String?         @db.Text
-  deliveryInstructions  String?         @map("delivery_instructions") @db.Text
-  createdAt             DateTime        @default(now()) @map("created_at")
-  updatedAt             DateTime        @updatedAt @map("updated_at")
+  id                   Int              @id @default(autoincrement())
+  orderNumber          String           @unique @map("order_number") @db.VarChar(50)
+  buyerId              Int              @map("buyer_id")
+  status               SalesOrderStatus @default(NEW)
+  orderDate            DateTime         @default(now()) @map("order_date")
+  deliveryDate         DateTime?        @map("delivery_date")
+  subtotal             Decimal          @default(0) @db.Decimal(12, 2)
+  discountTotal        Decimal          @default(0) @map("discount_total") @db.Decimal(12, 2)
+  taxTotal             Decimal          @default(0) @map("tax_total") @db.Decimal(12, 2)
+  shippingCharges      Decimal          @default(0) @map("shipping_charges") @db.Decimal(12, 2)
+  totalAmount          Decimal          @default(0) @map("total_amount") @db.Decimal(12, 2)
+  remarks              String?          @db.Text
+  deliveryInstructions String?          @map("delivery_instructions") @db.Text
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
 
-  buyer                 Buyer           @relation(fields: [buyerId], references: [id])
-  items                 SalesOrderItem[]
-  invoice               Invoice?
-  fulfillments          SalesFulfillment[]
-  returns               SalesReturn[]
+  buyer        Buyer              @relation(fields: [buyerId], references: [id])
+  items        SalesOrderItem[]
+  invoice      Invoice?
+  fulfillments SalesFulfillment[]
+  returns      SalesReturn[]
 
   @@index([buyerId])
   @@index([status])
@@ -309,24 +310,24 @@ model SalesOrder {
 }
 
 model SalesOrderItem {
-  id              Int        @id @default(autoincrement())
-  salesOrderId    Int        @map("sales_order_id")
-  productId       Int        @map("product_id")
-  productName     String     @map("product_name") @db.VarChar(255)
-  sku             String     @db.VarChar(100)
-  quantity        Decimal    @db.Decimal(12, 3)
-  fulfilledQuantity Decimal @default(0) @map("fulfilled_quantity") @db.Decimal(12, 3)
-  returnedQuantity  Decimal @default(0) @map("returned_quantity") @db.Decimal(12, 3)
-  unitPrice       Decimal    @map("unit_price") @db.Decimal(12, 2)
+  id                 Int     @id @default(autoincrement())
+  salesOrderId       Int     @map("sales_order_id")
+  productId          Int     @map("product_id")
+  productName        String  @map("product_name") @db.VarChar(255)
+  sku                String  @db.VarChar(100)
+  quantity           Decimal @db.Decimal(12, 3)
+  fulfilledQuantity  Decimal @default(0) @map("fulfilled_quantity") @db.Decimal(12, 3)
+  returnedQuantity   Decimal @default(0) @map("returned_quantity") @db.Decimal(12, 3)
+  unitPrice          Decimal @map("unit_price") @db.Decimal(12, 2)
   productDescription String? @map("product_description") @db.Text
-  discountPercent Decimal    @default(0) @map("discount_percent") @db.Decimal(5, 2)
-  taxRate         Decimal    @default(0) @map("tax_rate") @db.Decimal(5, 2)
-  lineTotal       Decimal    @map("line_total") @db.Decimal(12, 2)
+  discountPercent    Decimal @default(0) @map("discount_percent") @db.Decimal(5, 2)
+  taxRate            Decimal @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  lineTotal          Decimal @map("line_total") @db.Decimal(12, 2)
 
-  salesOrder      SalesOrder @relation(fields: [salesOrderId], references: [id])
-  product         Product    @relation(fields: [productId], references: [id])
-  fulfillments    SalesFulfillmentItem[]
-  returns         SalesReturnItem[]
+  salesOrder   SalesOrder             @relation(fields: [salesOrderId], references: [id])
+  product      Product                @relation(fields: [productId], references: [id])
+  fulfillments SalesFulfillmentItem[]
+  returns      SalesReturnItem[]
 
   @@index([salesOrderId])
   @@index([productId])
@@ -334,30 +335,30 @@ model SalesOrderItem {
 }
 
 model SalesFulfillment {
-  id             Int                    @id @default(autoincrement())
-  fulfillmentNumber String               @unique @map("fulfillment_number") @db.VarChar(50)
-  idempotencyKey String                 @unique @map("idempotency_key") @db.VarChar(100)
-  salesOrderId   Int                    @map("sales_order_id")
-  fulfilledById  Int?                   @map("fulfilled_by_id")
-  fulfilledAt    DateTime               @default(now()) @map("fulfilled_at")
-  notes          String?                @db.Text
+  id                Int      @id @default(autoincrement())
+  fulfillmentNumber String   @unique @map("fulfillment_number") @db.VarChar(50)
+  idempotencyKey    String   @unique @map("idempotency_key") @db.VarChar(100)
+  salesOrderId      Int      @map("sales_order_id")
+  fulfilledById     Int?     @map("fulfilled_by_id")
+  fulfilledAt       DateTime @default(now()) @map("fulfilled_at")
+  notes             String?  @db.Text
 
-  salesOrder SalesOrder                 @relation(fields: [salesOrderId], references: [id])
-  fulfilledBy User?                     @relation(fields: [fulfilledById], references: [id], onDelete: SetNull)
-  items SalesFulfillmentItem[]
+  salesOrder  SalesOrder             @relation(fields: [salesOrderId], references: [id])
+  fulfilledBy User?                  @relation(fields: [fulfilledById], references: [id], onDelete: SetNull)
+  items       SalesFulfillmentItem[]
 
   @@index([salesOrderId, fulfilledAt])
   @@map("sales_fulfillments")
 }
 
 model SalesFulfillmentItem {
-  id                 Int              @id @default(autoincrement())
-  fulfillmentId      Int              @map("fulfillment_id")
-  salesOrderItemId   Int              @map("sales_order_item_id")
-  quantity           Decimal          @db.Decimal(12, 3)
+  id               Int     @id @default(autoincrement())
+  fulfillmentId    Int     @map("fulfillment_id")
+  salesOrderItemId Int     @map("sales_order_item_id")
+  quantity         Decimal @db.Decimal(12, 3)
 
-  fulfillment SalesFulfillment       @relation(fields: [fulfillmentId], references: [id])
-  salesOrderItem SalesOrderItem       @relation(fields: [salesOrderItemId], references: [id])
+  fulfillment    SalesFulfillment @relation(fields: [fulfillmentId], references: [id])
+  salesOrderItem SalesOrderItem   @relation(fields: [salesOrderItemId], references: [id])
 
   @@unique([fulfillmentId, salesOrderItemId])
   @@index([salesOrderItemId])
@@ -365,29 +366,29 @@ model SalesFulfillmentItem {
 }
 
 model SalesReturn {
-  id             Int               @id @default(autoincrement())
-  returnNumber   String            @unique @map("return_number") @db.VarChar(50)
-  idempotencyKey String            @unique @map("idempotency_key") @db.VarChar(100)
-  salesOrderId   Int               @map("sales_order_id")
-  processedById  Int?              @map("processed_by_id")
-  returnedAt     DateTime          @default(now()) @map("returned_at")
-  reason         String?           @db.Text
+  id             Int      @id @default(autoincrement())
+  returnNumber   String   @unique @map("return_number") @db.VarChar(50)
+  idempotencyKey String   @unique @map("idempotency_key") @db.VarChar(100)
+  salesOrderId   Int      @map("sales_order_id")
+  processedById  Int?     @map("processed_by_id")
+  returnedAt     DateTime @default(now()) @map("returned_at")
+  reason         String?  @db.Text
 
-  salesOrder SalesOrder            @relation(fields: [salesOrderId], references: [id])
-  processedBy User?                @relation(fields: [processedById], references: [id], onDelete: SetNull)
-  items SalesReturnItem[]
+  salesOrder  SalesOrder        @relation(fields: [salesOrderId], references: [id])
+  processedBy User?             @relation(fields: [processedById], references: [id], onDelete: SetNull)
+  items       SalesReturnItem[]
 
   @@index([salesOrderId, returnedAt])
   @@map("sales_returns")
 }
 
 model SalesReturnItem {
-  id               Int          @id @default(autoincrement())
-  salesReturnId    Int          @map("sales_return_id")
-  salesOrderItemId Int          @map("sales_order_item_id")
-  quantity         Decimal      @db.Decimal(12, 3)
+  id               Int     @id @default(autoincrement())
+  salesReturnId    Int     @map("sales_return_id")
+  salesOrderItemId Int     @map("sales_order_item_id")
+  quantity         Decimal @db.Decimal(12, 3)
 
-  salesReturn SalesReturn       @relation(fields: [salesReturnId], references: [id])
+  salesReturn    SalesReturn    @relation(fields: [salesReturnId], references: [id])
   salesOrderItem SalesOrderItem @relation(fields: [salesOrderItemId], references: [id])
 
   @@unique([salesReturnId, salesOrderItemId])
@@ -410,14 +411,21 @@ model Invoice {
   additionalCharges Decimal       @default(0) @map("additional_charges") @db.Decimal(12, 2)
   totalAmount       Decimal       @default(0) @map("total_amount") @db.Decimal(12, 2)
   paidAmount        Decimal       @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  paymentTerms      String?       @map("payment_terms") @db.VarChar(100)
+  partnerName       String?       @map("partner_name") @db.VarChar(150)
+  partnerCompany    String?       @map("partner_company") @db.VarChar(150)
+  partnerEmail      String?       @map("partner_email") @db.VarChar(150)
+  partnerPhone      String?       @map("partner_phone") @db.VarChar(30)
+  partnerAddress    String?       @map("partner_address") @db.Text
+  partnerTaxId      String?       @map("partner_tax_id") @db.VarChar(50)
   notes             String?       @db.Text
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
 
-  purchaseOrder     PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
-  salesOrder        SalesOrder?    @relation(fields: [salesOrderId], references: [id])
-  items             InvoiceItem[]
-  payments          Payment[]
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  salesOrder    SalesOrder?    @relation(fields: [salesOrderId], references: [id])
+  items         InvoiceItem[]
+  payments      Payment[]
 
   @@index([type, status])
   @@index([invoiceDate])
@@ -425,50 +433,55 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id              Int      @id @default(autoincrement())
-  invoiceId       Int      @map("invoice_id")
-  productName     String   @map("product_name") @db.VarChar(255)
-  sku             String   @db.VarChar(100)
-  quantity        Decimal  @db.Decimal(12, 3)
-  unitPrice       Decimal  @map("unit_price") @db.Decimal(12, 2)
-  discountAmount  Decimal  @default(0) @map("discount_amount") @db.Decimal(12, 2)
-  taxRate         Decimal  @default(0) @map("tax_rate") @db.Decimal(5, 2)
-  taxAmount       Decimal  @default(0) @map("tax_amount") @db.Decimal(12, 2)
-  lineTotal       Decimal  @map("line_total") @db.Decimal(12, 2)
+  id             Int     @id @default(autoincrement())
+  invoiceId      Int     @map("invoice_id")
+  productName    String  @map("product_name") @db.VarChar(255)
+  sku            String  @db.VarChar(100)
+  description    String? @db.Text
+  quantity       Decimal @db.Decimal(12, 3)
+  unitPrice      Decimal @map("unit_price") @db.Decimal(12, 2)
+  discountAmount Decimal @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  taxRate        Decimal @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount      Decimal @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  lineTotal      Decimal @map("line_total") @db.Decimal(12, 2)
 
-  invoice         Invoice  @relation(fields: [invoiceId], references: [id])
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
 
   @@index([invoiceId])
   @@map("invoice_items")
 }
 
 model Payment {
-  id                Int           @id @default(autoincrement())
-  invoiceId         Int           @map("invoice_id")
-  amount            Decimal       @db.Decimal(12, 2)
-  paymentDate       DateTime      @default(now()) @map("payment_date")
-  method            PaymentMethod
-  transactionReference String?    @map("transaction_reference") @db.VarChar(150)
-  notes             String?       @db.Text
-  createdAt         DateTime      @default(now()) @map("created_at")
+  id                   Int           @id @default(autoincrement())
+  invoiceId            Int           @map("invoice_id")
+  amount               Decimal       @db.Decimal(12, 2)
+  paymentDate          DateTime      @default(now()) @map("payment_date")
+  method               PaymentMethod
+  transactionReference String?       @map("transaction_reference") @db.VarChar(150)
+  idempotencyKey       String?       @unique @map("idempotency_key") @db.VarChar(100)
+  createdById          Int?          @map("created_by_id")
+  notes                String?       @db.Text
+  createdAt            DateTime      @default(now()) @map("created_at")
 
-  invoice           Invoice       @relation(fields: [invoiceId], references: [id])
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+  createdBy User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([invoiceId])
   @@index([paymentDate])
   @@map("payments")
 }
-model InventoryTransaction {
-  id              Int                     @id @default(autoincrement())
-  productId       Int                     @map("product_id")
-  type            InventoryTransactionType
-  quantityChange  Decimal                 @map("quantity_change") @db.Decimal(12, 3)
-  referenceType   String?                 @map("reference_type") @db.VarChar(50)
-  referenceId     Int?                    @map("reference_id")
-  notes           String?                 @db.Text
-  createdAt       DateTime                @default(now()) @map("created_at")
 
-  product         Product                 @relation(fields: [productId], references: [id])
+model InventoryTransaction {
+  id             Int                      @id @default(autoincrement())
+  productId      Int                      @map("product_id")
+  type           InventoryTransactionType
+  quantityChange Decimal                  @map("quantity_change") @db.Decimal(12, 3)
+  referenceType  String?                  @map("reference_type") @db.VarChar(50)
+  referenceId    Int?                     @map("reference_id")
+  notes          String?                  @db.Text
+  createdAt      DateTime                 @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id])
 
   @@index([productId])
   @@index([type])

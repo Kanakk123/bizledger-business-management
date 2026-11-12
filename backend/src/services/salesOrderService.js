@@ -288,18 +288,21 @@ export async function returnSalesOrderItems(id, data, userId, db = prisma) {
 export async function createSalesInvoice(id, userId, db = prisma) {
   try { return await db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM sales_orders WHERE id = ${id} FOR UPDATE`;
-    const order = await tx.salesOrder.findUnique({ where: { id }, include: { items: true, invoice: { include: { items: true, payments: true } } } });
+    const order = await tx.salesOrder.findUnique({ where: { id }, include: { buyer: true, items: true, invoice: { include: { items: true, payments: true } } } });
     if (!order) throw new SalesOrderError("Sales order not found", 404);
     if (order.invoice) return { invoice: order.invoice, created: false };
     if (["NEW", "CANCELLED"].includes(order.status)) throw new SalesOrderError("An invoice can only be created for a confirmed sales order", 409);
     const invoice = await tx.invoice.create({
       data: {
         invoiceNumber: stamp("SINV"), type: "SALES", status: "UNPAID", salesOrderId: id,
+        partnerName: order.buyer.name, partnerCompany: order.buyer.companyName, partnerEmail: order.buyer.email, partnerPhone: order.buyer.phone,
+        partnerAddress: [order.buyer.billingAddress, order.buyer.city, order.buyer.state, order.buyer.postalCode, order.buyer.country].filter(Boolean).join(", ") || null,
+        partnerTaxId: order.buyer.taxRegistration,
         subtotal: order.subtotal, discountTotal: order.discountTotal, taxTotal: order.taxTotal,
         additionalCharges: order.shippingCharges, totalAmount: order.totalAmount,
         items: { create: order.items.map((item) => {
           const line = calculateLine({ quantity: item.quantity.toString(), unitPrice: item.unitPrice.toString(), discountPercent: item.discountPercent.toString(), taxRate: item.taxRate.toString() });
-          return { productName: item.productName, sku: item.sku, quantity: item.quantity, unitPrice: item.unitPrice, discountAmount: line.discountAmount.toFixed(2), taxRate: item.taxRate, taxAmount: line.taxAmount.toFixed(2), lineTotal: item.lineTotal };
+          return { productName: item.productName, sku: item.sku, description: item.productDescription, quantity: item.quantity, unitPrice: item.unitPrice, discountAmount: line.discountAmount.toFixed(2), taxRate: item.taxRate, taxAmount: line.taxAmount.toFixed(2), lineTotal: item.lineTotal };
         }) },
       }, include: { items: true, payments: true },
     });
