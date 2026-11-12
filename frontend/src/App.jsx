@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
+import { api } from './lib/api.js'
+import ProductsWorkspace from './products/ProductsWorkspace.jsx'
 import './App.css'
-
-const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 
 const sections = [
   { name: 'Dashboard', path: '/', icon: '◫', permission: 'dashboard:read' },
@@ -14,17 +14,6 @@ const sections = [
   { name: 'Payments', path: '/payments', icon: '＄', permission: 'payments:read' },
   { name: 'Reports', path: '/reports', icon: '▥', permission: 'reports:read' },
 ]
-
-async function api(path, options = {}) {
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-  })
-  const body = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(body.message || 'Something went wrong. Please try again.')
-  return body
-}
 
 function Brand({ compact = false }) {
   return <div className={`brand ${compact ? 'brand-compact' : ''}`}>
@@ -95,7 +84,7 @@ function AppShell({ user, onLogout }) {
   const [path, setPath] = useState(window.location.pathname)
   const [menuOpen, setMenuOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
-  const active = sections.find((item) => item.path === path) || sections[0]
+  const active = sections.find((item) => item.path === path) || (path.startsWith('/products/') ? sections[1] : sections[0])
 
   useEffect(() => {
     const updatePath = () => setPath(window.location.pathname)
@@ -104,7 +93,7 @@ function AppShell({ user, onLogout }) {
   }, [])
 
   function navigate(event, destination) {
-    event.preventDefault()
+    event?.preventDefault()
     window.history.pushState({}, '', destination)
     setPath(destination)
     setMenuOpen(false)
@@ -131,12 +120,12 @@ function AppShell({ user, onLogout }) {
     </aside>
     <main className="main-area">
       <header className="topbar"><button className="menu-toggle" aria-label="Open navigation" onClick={() => setMenuOpen(true)}>☰</button><div className="breadcrumbs"><span>Workspace</span><b>/</b><strong>{active.name}</strong></div><div className="topbar-actions"><span className="today-label">Your business at a glance</span><span className="topbar-divider" /><button className="avatar-small" title={user.name}>{user.name?.trim()?.[0]?.toUpperCase() || 'U'}</button></div></header>
-      <section className="page-content"><div className="page-heading"><div><p className="page-kicker">YOUR WORKSPACE&nbsp; / &nbsp;{active.name.toUpperCase()}</p><h1>{active.name === 'Dashboard' ? `Good to have you here, ${user.name.split(' ')[0]}.` : active.name}</h1><p className="page-subtitle">{active.name === 'Dashboard' ? 'A little more clarity for the work ahead.' : `Your ${active.name.toLowerCase()} workspace.`}</p></div><div className="date-chip"><span>◷</span> {new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date())}</div></div>
+      {active.name === 'Products' ? <ProductsWorkspace path={path} navigate={navigate} user={user} /> : <section className="page-content"><div className="page-heading"><div><p className="page-kicker">YOUR WORKSPACE&nbsp; / &nbsp;{active.name.toUpperCase()}</p><h1>{active.name === 'Dashboard' ? `Good to have you here, ${user.name.split(' ')[0]}.` : active.name}</h1><p className="page-subtitle">{active.name === 'Dashboard' ? 'A little more clarity for the work ahead.' : `Your ${active.name.toLowerCase()} workspace.`}</p></div><div className="date-chip"><span>◷</span> {new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date())}</div></div>
         <div className="welcome-card"><div className="welcome-copy"><span className="welcome-label"><span /> WORKSPACE READY</span><h2>{active.name === 'Dashboard' ? 'Your business, coming into focus.' : `${active.name} will feel at home here.`}</h2><p>Sign-in is connected and your workspace is ready. This area will come alive as the BizLedger features are added.</p><div className="welcome-actions"><span className="role-badge">{user.role}</span><span className="welcome-secure">◈&nbsp; Private workspace</span></div></div><div className="welcome-art" aria-hidden="true"><div className="art-ring ring-back"/><div className="art-ring ring-front"/><div className="art-sun"/><div className="art-hill hill-back"/><div className="art-hill hill-front"/><div className="art-stem"/><div className="art-leaf leaf-left"/><div className="art-leaf leaf-right"/><span className="art-star star-a">✳</span><span className="art-star star-b">✦</span></div></div>
         <div className="section-row"><div><h2>Everything in its place</h2><p>Your tools, ready when you are.</p></div><span className="section-count">{sections.length} AREAS</span></div>
         <div className="area-grid">{sections.slice(1).map((item, index) => <a className="area-card" href={item.path} onClick={(event) => navigate(event, item.path)} key={item.path}><span className={`area-icon area-color-${index % 4}`}>{item.icon}</span><span className="area-card-text"><strong>{item.name}</strong><small>Open {item.name.toLowerCase()}</small></span><span className="area-arrow">↗</span></a>)}</div>
         <footer className="content-footer"><span>BizLedger <i>·</i> Your business, in good order.</span><span>Signed in as {user.email}</span></footer>
-      </section>
+      </section>}
     </main>
   </div>
 }
