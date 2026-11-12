@@ -1,5 +1,11 @@
-
-import "dotenv/config";
+/**
+ * Prisma client singleton.
+ *
+ * Env vars must be loaded BEFORE this module is imported.
+ * server.js loads dotenv early via an absolute path so this is safe regardless
+ * of the working directory the process was started from.
+ */
+import "./env.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../generated/prisma/client.ts";
 

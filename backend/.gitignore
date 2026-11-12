@@ -13,7 +13,7 @@ build/
 coverage/
 
 # Generated Prisma client
-backend/src/generated/prisma/
+src/generated/prisma/
 
 # Logs
 *.log

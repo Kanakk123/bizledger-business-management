@@ -1,12 +1,19 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "BizLedger API – Node.js + Express + Prisma + MariaDB",
+  "main": "src/server.js",
   "scripts": {
-  "start": "node src/server.js",
-  "dev": "nodemon src/server.js"
-},
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "start:root": "node backend/src/server.js",
+    "dev:root": "nodemon backend/src/server.js",
+    "seed": "node prisma/seed.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:validate": "prisma validate",
+    "test": "node --test"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
