@@ -1,5 +1,6 @@
 import Decimal from "decimal.js";
 import { z } from "zod";
+import { isCountableUnit } from "../utils/productUnits.js";
 
 const decimal = (places, max) => z.union([z.string().trim(), z.number().finite()])
   .transform(String)
@@ -30,13 +31,15 @@ export const productCreateSchema = z.object({
   specifications: nullableText(10000),
   purchasePrice: decimal(2, "9999999999.99"),
   sellingPrice: decimal(2, "9999999999.99"),
-  taxRate: decimal(2, "999.99").optional().default("0.00"),
+  taxRate: decimal(2, "100").optional().default("0.00"),
   stockQuantity: decimal(3, "999999999.999").optional().default("0.000"),
   minStockLevel: decimal(3, "999999999.999").optional().default("0.000"),
   stockReason: z.string().trim().min(2).max(500).optional(),
   remarks: nullableText(10000),
 }).strict().refine((value) => new Decimal(value.stockQuantity).isZero() || Boolean(value.stockReason), {
   path: ["stockReason"], message: "A reason is required when opening stock is greater than zero.",
+}).refine((value) => !isCountableUnit(value.unit) || new Decimal(value.stockQuantity).isInteger(), {
+  path: ["stockQuantity"], message: "Whole number opening quantities are required for pieces, units, packets and boxes.",
 });
 
 export const productUpdateSchema = z.object({
@@ -48,7 +51,7 @@ export const productUpdateSchema = z.object({
   specifications: nullableText(10000),
   purchasePrice: decimal(2, "9999999999.99").optional(),
   sellingPrice: decimal(2, "9999999999.99").optional(),
-  taxRate: decimal(2, "999.99").optional(),
+  taxRate: decimal(2, "100").optional(),
   minStockLevel: decimal(3, "999999999.999").optional(),
   remarks: nullableText(10000),
 }).strict().refine((data) => Object.keys(data).length > 0, "Provide at least one product field to update.");

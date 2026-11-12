@@ -1,11 +1,13 @@
 import Decimal from "decimal.js";
 import { prisma } from "../config/prisma.js";
+import { isCountableUnit } from "../utils/productUnits.js";
 
 const STOCK_MAX = new Decimal("999999999.999");
 
 export class ProductServiceError extends Error {
   constructor(message, status = 400) { super(message); this.name = "ProductServiceError"; this.status = status; }
 }
+
 
 const ensureActiveCategory = async (db, categoryId) => {
   if (categoryId == null) return;
@@ -104,6 +106,7 @@ export async function getProduct(id, db = prisma) {
 }
 
 export async function createProduct(data, userId, db = prisma) {
+  if (isCountableUnit(data.unit) && !new Decimal(data.stockQuantity ?? 0).isInteger()) throw new ProductServiceError(`Fractional quantities are not allowed for products measured in ${data.unit}. Enter a whole number quantity.`, 422);
   try {
     return await db.$transaction(async (tx) => {
       await ensureActiveCategory(tx, data.categoryId);
@@ -124,9 +127,10 @@ export async function createProduct(data, userId, db = prisma) {
 export async function updateProduct(id, data, userId, db = prisma) {
   try {
     return await db.$transaction(async (tx) => {
-      const current = await tx.product.findUnique({ where: { id }, select: { id: true, isActive: true, categoryId: true } });
+      const current = await tx.product.findUnique({ where: { id }, select: { id: true, isActive: true, categoryId: true, unit: true, stockQuantity: true } });
       if (!current) throw new ProductServiceError("Product not found", 404);
       if (!current.isActive) throw new ProductServiceError("Archived products cannot be edited", 409);
+      if (data.unit !== undefined && isCountableUnit(data.unit) && !new Decimal(current.stockQuantity.toString()).isInteger()) throw new ProductServiceError(`Cannot change the unit to ${data.unit} while stock includes fractional quantities. Adjust stock to a whole number first.`, 422);
       if (data.categoryId !== undefined && data.categoryId !== current.categoryId) await ensureActiveCategory(tx, data.categoryId);
       const product = await tx.product.update({ where: { id }, data, include: { category: true } });
       await audit(tx, userId, "PRODUCT_UPDATED", "Product", id, { changedFields: Object.keys(data) });
@@ -152,12 +156,13 @@ export async function adjustStock(id, quantityChange, reason, userId, db = prism
     // adjust the same stock concurrently. Ledger and audit writes roll back
     // with the stock write if either insert fails.
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      const current = await tx.product.findUnique({ where: { id }, select: { id: true, sku: true, stockQuantity: true, isActive: true } });
+      const current = await tx.product.findUnique({ where: { id }, select: { id: true, sku: true, unit: true, stockQuantity: true, isActive: true } });
       if (!current) throw new ProductServiceError("Product not found", 404);
       if (!current.isActive) throw new ProductServiceError("Archived products cannot have stock adjusted", 409);
 
       const before = new Decimal(current.stockQuantity.toString());
       const change = new Decimal(quantityChange);
+      if (isCountableUnit(current.unit) && !change.isInteger()) throw new ProductServiceError(`Fractional adjustments are not allowed for products measured in ${current.unit}. Enter a whole number quantity.`, 422);
       const after = before.plus(change);
       if (after.isNegative()) throw new ProductServiceError("Insufficient stock for this adjustment", 409);
       if (after.gt(STOCK_MAX)) throw new ProductServiceError("Stock quantity exceeds the supported limit", 422);

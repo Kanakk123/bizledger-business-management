@@ -1,5 +1,9 @@
 # BizLedger API notes
 
+## Tax rate convention
+
+`taxRate` is stored and sent as a percentage at every product and order boundary: `6` means 6%, and the backend calculates tax as the discounted line base multiplied by `6 / 100`. Order items snapshot the percentage and rounded tax amount; invoices use those saved order values. Monetary rounding remains Decimal-based to two places. Existing product and order values are not automatically converted because a stored value such as `0.06` cannot reliably tell us whether the user intended 0.06% or 6%; verify and update a product explicitly when needed. Issued invoice totals remain historical snapshots.
+
 The API uses JSON responses with the existing `{ "success": true, "data": ... }` envelope. All insight endpoints require the BizLedger session cookie or a valid bearer JWT. Dashboard access uses `dashboard:read`; analytics and reports use `reports:read` (ADMIN, MANAGER and STAFF currently have these read permissions).
 
 ## Dashboard

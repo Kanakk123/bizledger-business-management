@@ -82,9 +82,27 @@ test("PDF uses persisted invoice values and paginates longer invoices", async ()
   const { buffer } = await invoicePdf(1, { invoice: { findUnique: async () => invoice } });
   const pdf = buffer.toString("ascii");
   assert.ok(pdf.startsWith("%PDF-1.4"));
-  assert.match(pdf, /\/Count 2/);
+  assert.match(pdf, /\/Count [2-9]\d*/);
+  assert.ok((pdf.match(/\(DESCRIPTION\) Tj/g) ?? []).length >= 2);
   assert.match(pdf, /Snapshot Buyer/);
   assert.match(pdf, /Persisted description/);
   assert.match(pdf, /60\.00/);
   assert.match(pdf, /Net 30/);
+});
+
+test("purchase invoice PDF uses supplier details and the shared invoice layout", async () => {
+  const invoice = {
+    id: 4, invoiceNumber: "PINV-TEST", type: "PURCHASE", invoiceDate: new Date("2026-11-12T00:00:00Z"), dueDate: new Date("2026-12-12T00:00:00Z"),
+    partnerName: "Snapshot Supplier", partnerCompany: "Supplier Company", partnerAddress: "Market Road", partnerTaxId: "GST-1",
+    subtotal: new Decimal("100.00"), discountTotal: new Decimal("0"), taxTotal: new Decimal("6.00"), additionalCharges: new Decimal("0"),
+    totalAmount: new Decimal("106.00"), paidAmount: new Decimal("0"), outstandingAmount: new Decimal("106.00"), status: "UNPAID", paymentTerms: null, notes: null, payments: [],
+    items: [{ id: 1, productName: "Paper", sku: "P-1", description: null, quantity: new Decimal("1"), unitPrice: new Decimal("100"), taxRate: new Decimal("6"), taxAmount: new Decimal("6"), lineTotal: new Decimal("106"), discountAmount: new Decimal("0") }],
+    purchaseOrder: { supplier: { name: "Snapshot Supplier", companyName: "Supplier Company" } }, salesOrder: null,
+  };
+  const { buffer } = await invoicePdf(4, { invoice: { findUnique: async () => invoice } });
+  const pdf = buffer.toString("ascii");
+  assert.match(pdf, /PURCHASE INVOICE/);
+  assert.match(pdf, /Supplier Company/);
+  assert.match(pdf, /Snapshot Supplier/);
+  assert.match(pdf, /106\.00/);
 });

@@ -79,8 +79,13 @@ test("product creation schema validates required fields, decimal precision and o
   assert.equal(validProduct().sku, "WRENCH-01");
   assert.equal(productCreateSchema.safeParse({ name: "x", sku: "x", unit: "each", purchasePrice: "1.001", sellingPrice: "2" }).success, false);
   assert.equal(productCreateSchema.safeParse({ name: "x", sku: "x", unit: "each", purchasePrice: "1", sellingPrice: "2", stockQuantity: "3" }).success, false);
-  const parsed = validProduct({ stockQuantity: "3.125", stockReason: "Opening inventory" });
+  const parsed = validProduct({ unit: "kg", stockQuantity: "3.125", stockReason: "Opening inventory" });
   assert.equal(parsed.stockQuantity, "3.125");
+  const base = { name: "Tax test", sku: "TAX-TEST", unit: "each", purchasePrice: "1", sellingPrice: "2" };
+  assert.equal(productCreateSchema.safeParse({ ...base, taxRate: "100" }).success, true);
+  assert.equal(productCreateSchema.safeParse({ ...base, taxRate: "100.01" }).success, false);
+  assert.equal(productUpdateSchema.safeParse({ taxRate: "100.01" }).success, false);
+  assert.equal(productCreateSchema.safeParse({ ...base, unit: "pieces", stockQuantity: "2.5", stockReason: "Opening stock" }).success, false);
 });
 
 test("duplicate SKU is rejected without creating another product", async () => {
@@ -120,7 +125,7 @@ test("categories support create, list, update and archive without deletion", asy
 
 test("stock adjustment and ledger commit together; negative stock is rejected", async () => {
   const db = memoryDb();
-  const product = await createProduct(validProduct({ stockQuantity: "5", stockReason: "Opening stock" }), 7, db);
+  const product = await createProduct(validProduct({ unit: "kg", stockQuantity: "5", stockReason: "Opening stock" }), 7, db);
   const after = await adjustStock(product.id, "-2.125", "Cycle count correction", 7, db);
   assert.equal(after.stockQuantity, "2.875");
   assert.equal(db.state.inventory.length, 2);
@@ -134,6 +139,23 @@ test("stock adjustment and ledger commit together; negative stock is rejected", 
   await assert.rejects(() => adjustStock(product.id, "1", "Found stock", 7, db), /ledger insert failed/);
   assert.equal(db.state.products[0].stockQuantity, "2.875");
   assert.equal(db.state.inventory.length, 2);
+});
+
+test("countable-unit adjustments reject fractions while measured units accept them", async () => {
+  const db = memoryDb();
+  const pieces = await createProduct(validProduct({ sku: "PIECES-01" }), 7, db);
+  const measured = await createProduct(validProduct({ sku: "WEIGHT-01", unit: "kg" }), 7, db);
+  await assert.rejects(() => adjustStock(pieces.id, "5.059", "Count correction", 7, db), { status: 422, message: /whole number quantity/ });
+  const adjusted = await adjustStock(measured.id, "5.059", "Scale correction", 7, db);
+  assert.equal(adjusted.stockQuantity, "5.059");
+  assert.equal(db.state.inventory.length, 1);
+  await assert.rejects(() => createProduct({ ...validProduct(), sku: "PIECES-02", stockQuantity: "2.5", stockReason: "Opening count" }, 7, db), { status: 422, message: /Fractional quantities/ });
+});
+
+test("unit cannot be changed to a countable unit while fractional stock remains", async () => {
+  const db = memoryDb();
+  const product = await createProduct(validProduct({ unit: "kg", stockQuantity: "1.5", stockReason: "Opening weight" }), 7, db);
+  await assert.rejects(() => updateProduct(product.id, { unit: "pieces" }, 7, db), { status: 422, message: /whole number first/ });
 });
 
 test("concurrent stock adjustments are retried without losing either ledger entry", async () => {

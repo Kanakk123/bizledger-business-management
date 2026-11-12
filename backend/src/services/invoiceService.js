@@ -1,5 +1,6 @@
 import Decimal from "decimal.js";
 import { prisma } from "../config/prisma.js";
+import { generateInvoicePdf } from "../utils/invoicePdf.js";
 
 const dec = (v) => new Decimal(v ?? 0);
 const cents = (v) => dec(v).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
@@ -123,24 +124,7 @@ export async function financialSummary(db = prisma) {
   return { accountsReceivable: format(receivable), accountsPayable: format(payable), totalCollected: format(collected), totalPaidToSuppliers: format(paidOut), overdueReceivables: format(overdueReceivable), overduePayables: format(overduePayable), unpaidCount: unpaid.length, partiallyPaidCount: partial.length, overdueCount: overdue.length, supplierOutstanding: [...outstandingByPartner.values()].filter((x) => x.type === "PURCHASE").map((x) => ({ ...x, amount: format(x.amount) })), buyerOutstanding: [...outstandingByPartner.values()].filter((x) => x.type === "SALES").map((x) => ({ ...x, amount: format(x.amount) })) };
 }
 
-const pdfText = (value) => String(value ?? "").normalize("NFKD").replace(/[^\x20-\x7E]/g, "?").replaceAll("\\", "\\\\").replaceAll("(", "\\(").replaceAll(")", "\\)");
 export async function invoicePdf(id, db = prisma) {
   const inv = await getInvoice(id, db);
-  const partner = inv.type === "SALES" ? inv.salesOrder?.buyer : inv.purchaseOrder?.supplier;
-  const fmtMoney = (value) => cents(value).toFixed(2);
-  const lines = ["BizLedger", `${inv.type} INVOICE  ${inv.invoiceNumber}`, `Issue date: ${inv.invoiceDate.toISOString().slice(0, 10)}  Due: ${inv.dueDate?.toISOString().slice(0, 10) ?? "-"}`, `Bill to: ${inv.partnerName ?? partner?.name ?? ""}  ${inv.partnerCompany ?? partner?.companyName ?? ""}`, `Address: ${inv.partnerAddress ?? partner?.billingAddress ?? partner?.address ?? ""}`, `Tax registration: ${inv.partnerTaxId ?? partner?.taxRegistration ?? "-"}`, "", "Items:", ...inv.items.map((it) => `${it.productName} [${it.sku}] ${it.description ?? ""}  ${it.quantity} x ${fmtMoney(it.unitPrice)}  discount ${fmtMoney(it.discountAmount)}  tax ${fmtMoney(it.taxAmount)}  total ${fmtMoney(it.lineTotal)}`), "", `Subtotal: ${fmtMoney(inv.subtotal)}`, `Discount: ${fmtMoney(inv.discountTotal)}`, `Tax: ${fmtMoney(inv.taxTotal)}`, `Additional charges: ${fmtMoney(inv.additionalCharges)}`, `Grand total: ${fmtMoney(inv.totalAmount)}`, `Paid: ${fmtMoney(inv.paidAmount)}  Outstanding: ${fmtMoney(inv.outstandingAmount)}`, `Payment terms: ${inv.paymentTerms ?? "-"}`, `Notes: ${inv.notes ?? "-"}`, `Status: ${inv.status}`];
-  const wrappedLines = lines.flatMap((line) => line.match(/.{1,95}/g) ?? [""]);
-  const pageLines = Array.from({ length: Math.ceil(wrappedLines.length / 45) }, (_, i) => wrappedLines.slice(i * 45, (i + 1) * 45));
-  const kids = pageLines.map((_, i) => `${4 + i * 2} 0 R`).join(" ");
-  const objects = ["<< /Type /Catalog /Pages 2 0 R >>", `<< /Type /Pages /Kids [${kids}] /Count ${pageLines.length} >>`, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"];
-  for (const [i, page] of pageLines.entries()) {
-    const pageNumber = 4 + i * 2, streamNumber = pageNumber + 1;
-    const stream = `BT\n/F1 10 Tf\n50 790 Td\n${page.map((line, lineIndex) => `${lineIndex ? "0 -16 Td\n" : ""}(${pdfText(line)}) Tj\n`).join("")}ET`;
-    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ${streamNumber} 0 R >>`);
-    objects.push(`<< /Length ${Buffer.byteLength(stream, "ascii")} >>\nstream\n${stream}\nendstream`);
-  }
-  let pdf = "%PDF-1.4\n", offsets = [0];
-  for (let i = 0; i < objects.length; i++) { offsets.push(Buffer.byteLength(pdf, "ascii")); pdf += `${i + 1} 0 obj\n${objects[i]}\nendobj\n`; }
-  const xref = Buffer.byteLength(pdf, "ascii"); pdf += `xref\n0 ${offsets.length}\n0000000000 65535 f \n${offsets.slice(1).map((o) => `${String(o).padStart(10, "0")} 00000 n \n`).join("")}trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
-  return { buffer: Buffer.from(pdf, "ascii"), invoice: inv };
+  return { buffer: generateInvoicePdf(inv), invoice: inv };
 }

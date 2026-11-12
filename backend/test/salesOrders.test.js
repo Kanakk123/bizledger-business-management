@@ -75,6 +75,17 @@ test("multi-item total uses Decimal discounts, tax and shipping", () => {
   });
 });
 
+test("tax rate inputs are percentages and round correctly for 0, 5, 6 and 18 percent", () => {
+  for (const [rate, expectedTax, expectedTotal] of [["0", "0.00", "4000.00"], ["5", "200.00", "4200.00"], ["6", "240.00", "4240.00"], ["18", "720.00", "4720.00"]]) {
+    const result = calculateSalesTotals([{ quantity: "5", unitPrice: "800", discountPercent: "0", taxRate: rate }]);
+    assert.equal(result.taxTotal, expectedTax);
+    assert.equal(result.totalAmount, expectedTotal);
+  }
+  const fractionalPercentage = calculateSalesTotals([{ quantity: "5", unitPrice: "800", discountPercent: "0", taxRate: "0.06" }]);
+  assert.equal(fractionalPercentage.taxTotal, "2.40");
+  assert.equal(fractionalPercentage.totalAmount, "4002.40");
+});
+
 test("create snapshots active buyer/products and calculates totals on the server", async () => {
   const state = { order: null, audits: [] };
   const db = { $transaction: (callback) => callback({

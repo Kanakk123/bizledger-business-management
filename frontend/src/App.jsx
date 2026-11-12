@@ -6,7 +6,9 @@ import PurchaseOrdersWorkspace from './purchases/PurchaseOrdersWorkspace.jsx'
 import SalesOrdersWorkspace from './sales/SalesOrdersWorkspace.jsx'
 import FinanceWorkspace from './finance/FinanceWorkspace.jsx'
 import InsightsWorkspace from './insights/InsightsWorkspace.jsx'
+import UsersWorkspace from './users/UsersWorkspace.jsx'
 import './App.css'
+import './account.css'
 
 const sections = [
   { name: 'Dashboard', path: '/', icon: '◫', permission: 'dashboard:read' },
@@ -19,6 +21,7 @@ const sections = [
   { name: 'Payments', path: '/payments', icon: '＄', permission: 'payments:read' },
   { name: 'Analytics', path: '/analytics', icon: '⌁', permission: 'reports:read' },
   { name: 'Reports', path: '/reports', icon: '▥', permission: 'reports:read' },
+  { name: 'Users', path: '/users', icon: '♙', permission: 'users:manage' },
 ]
 
 function Brand({ compact = false }) {
@@ -90,6 +93,8 @@ function AppShell({ user, onLogout }) {
   const [path, setPath] = useState(window.location.pathname)
   const [menuOpen, setMenuOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
+  const visibleSections = sections.filter((item) => item.permission !== 'users:manage' || user.role === 'ADMIN')
   const active = sections.find((item) => item.path === path)
     || (path.startsWith('/products/') ? sections[1] : null)
     || (path.startsWith('/suppliers/') ? sections[2] : null)
@@ -124,24 +129,25 @@ function AppShell({ user, onLogout }) {
       <div className="workspace-switch"><span className="workspace-avatar">B</span><span className="workspace-text"><strong>My workspace</strong><small>Business account</small></span><span className="switch-chevron">⌄</span></div>
       <div className="nav-caption">WORKSPACE</div>
       <nav className="side-nav" aria-label="Main navigation">
-        {sections.map((item) => <a key={item.path} href={item.path} onClick={(event) => navigate(event, item.path)} className={`nav-link ${active.path === item.path ? 'nav-active' : ''}`}><span className="nav-icon">{item.icon}</span><span>{item.name}</span>{item.name === 'Products' && <span className="nav-indicator" />}</a>)}
+        {visibleSections.map((item) => <a key={item.path} href={item.path} onClick={(event) => navigate(event, item.path)} className={`nav-link ${active.path === item.path ? 'nav-active' : ''}`}><span className="nav-icon">{item.icon}</span><span>{item.name}</span>{item.name === 'Products' && <span className="nav-indicator" />}</a>)}
       </nav>
       <div className="sidebar-bottom"><div className="help-card"><span className="help-spark">✳</span><strong>Need a hand?</strong><span>Your workspace is ready to grow.</span><span className="help-link">Help center · coming soon</span></div>
         <button className="profile-button" type="button" onClick={logout} disabled={loggingOut}><span className="profile-avatar">{user.name?.trim()?.[0]?.toUpperCase() || 'U'}</span><span className="profile-copy"><strong>{user.name}</strong><small>{user.role.toLowerCase()}</small></span><span className="profile-action">{loggingOut ? '…' : '↪'}</span></button>
       </div>
     </aside>
     <main className="main-area">
-      <header className="topbar"><button className="menu-toggle" aria-label="Open navigation" onClick={() => setMenuOpen(true)}>☰</button><div className="breadcrumbs"><span>Workspace</span><b>/</b><strong>{active.name}</strong></div><div className="topbar-actions"><span className="today-label">Your business at a glance</span><span className="topbar-divider" /><button className="avatar-small" title={user.name}>{user.name?.trim()?.[0]?.toUpperCase() || 'U'}</button></div></header>
+      <header className="topbar"><button className="menu-toggle" aria-label="Open navigation" onClick={() => setMenuOpen(true)}>☰</button><div className="breadcrumbs"><span>Workspace</span><b>/</b><strong>{active.name}</strong></div><div className="topbar-actions"><span className="today-label">Your business at a glance</span><span className="topbar-divider" /><button className="avatar-small" title="Open account menu" aria-expanded={accountOpen} onClick={() => setAccountOpen((open) => !open)}>{user.name?.trim()?.[0]?.toUpperCase() || 'U'}</button>{accountOpen && <div className="account-menu"><strong>{user.name}</strong><span>{user.email}</span><small>{user.role}</small>{user.role === 'ADMIN' && <button onClick={(event) => { setAccountOpen(false); navigate(event, '/users') }}>Manage users</button>}<button onClick={logout} disabled={loggingOut}>{loggingOut ? 'Signing out…' : 'Log out'}</button></div>}</div></header>
       {active.name === 'Products' ? <ProductsWorkspace path={path} navigate={navigate} user={user} />
         : ['Suppliers', 'Buyers'].includes(active.name) ? <PartnersWorkspace kind={active.name.toLowerCase().slice(0, -1)} path={path} navigate={navigate} user={user} />
           : active.name === 'Purchases' ? <PurchaseOrdersWorkspace path={path} navigate={navigate} user={user} />
             : active.name === 'Sales' ? <SalesOrdersWorkspace path={path} navigate={navigate} user={user} />
         : ['Invoices', 'Payments'].includes(active.name) ? <FinanceWorkspace kind={active.name} user={user} />
-        : ['Dashboard', 'Analytics', 'Reports'].includes(active.name) ? <InsightsWorkspace kind={active.name} />
+        : active.name === 'Users' && user.role === 'ADMIN' ? <UsersWorkspace />
+        : ['Dashboard', 'Analytics', 'Reports'].includes(active.name) ? <InsightsWorkspace key={active.name} kind={active.name} />
         : <section className="page-content"><div className="page-heading"><div><p className="page-kicker">YOUR WORKSPACE&nbsp; / &nbsp;{active.name.toUpperCase()}</p><h1>{active.name === 'Dashboard' ? `Good to have you here, ${user.name.split(' ')[0]}.` : active.name}</h1><p className="page-subtitle">{active.name === 'Dashboard' ? 'A little more clarity for the work ahead.' : `Your ${active.name.toLowerCase()} workspace.`}</p></div><div className="date-chip"><span>◷</span> {new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date())}</div></div>
         <div className="welcome-card"><div className="welcome-copy"><span className="welcome-label"><span /> WORKSPACE READY</span><h2>{active.name === 'Dashboard' ? 'Your business, coming into focus.' : `${active.name} will feel at home here.`}</h2><p>Sign-in is connected and your workspace is ready. This area will come alive as the BizLedger features are added.</p><div className="welcome-actions"><span className="role-badge">{user.role}</span><span className="welcome-secure">◈&nbsp; Private workspace</span></div></div><div className="welcome-art" aria-hidden="true"><div className="art-ring ring-back"/><div className="art-ring ring-front"/><div className="art-sun"/><div className="art-hill hill-back"/><div className="art-hill hill-front"/><div className="art-stem"/><div className="art-leaf leaf-left"/><div className="art-leaf leaf-right"/><span className="art-star star-a">✳</span><span className="art-star star-b">✦</span></div></div>
-        <div className="section-row"><div><h2>Everything in its place</h2><p>Your tools, ready when you are.</p></div><span className="section-count">{sections.length} AREAS</span></div>
-        <div className="area-grid">{sections.slice(1).map((item, index) => <a className="area-card" href={item.path} onClick={(event) => navigate(event, item.path)} key={item.path}><span className={`area-icon area-color-${index % 4}`}>{item.icon}</span><span className="area-card-text"><strong>{item.name}</strong><small>Open {item.name.toLowerCase()}</small></span><span className="area-arrow">↗</span></a>)}</div>
+        <div className="section-row"><div><h2>Everything in its place</h2><p>Your tools, ready when you are.</p></div><span className="section-count">{visibleSections.length} AREAS</span></div>
+        <div className="area-grid">{visibleSections.slice(1).map((item, index) => <a className="area-card" href={item.path} onClick={(event) => navigate(event, item.path)} key={item.path}><span className={`area-icon area-color-${index % 4}`}>{item.icon}</span><span className="area-card-text"><strong>{item.name}</strong><small>Open {item.name.toLowerCase()}</small></span><span className="area-arrow">↗</span></a>)}</div>
         <footer className="content-footer"><span>BizLedger <i>·</i> Your business, in good order.</span><span>Signed in as {user.email}</span></footer>
       </section>}
     </main>

@@ -82,6 +82,14 @@ test("multi-line purchase totals use decimal rounding for discounts, tax and cha
   });
 });
 
+test("purchase tax rate inputs are percentages and round correctly for 0, 5, 6 and 18 percent", () => {
+  for (const [rate, expectedTax, expectedTotal] of [["0", "0.00", "4000.00"], ["5", "200.00", "4200.00"], ["6", "240.00", "4240.00"], ["18", "720.00", "4720.00"]]) {
+    const result = calculatePurchaseTotals([{ quantity: "5", unitPrice: "800", discountPercent: "0", taxRate: rate }]);
+    assert.equal(result.taxTotal, expectedTax);
+    assert.equal(result.totalAmount, expectedTotal);
+  }
+});
+
 test("create snapshots active supplier/product data and persists authoritative totals", async () => {
   const state = { order: null, audits: [] };
   const db = { $transaction: (callback) => callback({

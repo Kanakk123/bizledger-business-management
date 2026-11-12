@@ -8,6 +8,7 @@ const router = express.Router();
 
 router.post("/login", validateBody(loginSchema), login);
 router.get("/me", authenticate, me);
-router.post("/logout", authenticate, logout);
+// Clearing the httpOnly cookie must also work when its JWT has expired.
+router.post("/logout", logout);
 
 export default router;

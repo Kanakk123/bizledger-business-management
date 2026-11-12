@@ -73,3 +73,16 @@ test("payment reports derive fully paid and overdue status from payment records"
   assert.equal(report.items[0].invoiceId, 2);
   assert.equal(report.summary.amount, "25.00");
 });
+
+test("all report types return a complete zero-record response for empty databases", async () => {
+  const db = new Proxy({}, { get: () => ({ findMany: async () => [] }) });
+  const types = ["sales", "purchases", "inventory", "low-stock", "product-sales", "product-purchases", "supplier-transactions", "buyer-transactions", "receivables", "payables", "revenue-expenditure", "payments"];
+  for (const type of types) {
+    const report = await getReport(reportQuerySchema.parse({ type }), db);
+    assert.equal(report.summary.count, 0, `${type} count`);
+    assert.equal(report.summary.amount, "0.00", `${type} amount`);
+    assert.deepEqual(report.items, [], `${type} items`);
+    assert.equal(report.pagination.total, 0, `${type} pagination`);
+    assert.equal(toCsv(report), "", `${type} CSV`);
+  }
+});

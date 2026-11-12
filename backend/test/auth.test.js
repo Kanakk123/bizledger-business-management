@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { loginSchema } from "../src/schemas/auth.js";
 import { hashPassword, comparePassword } from "../src/utils/password.js";
 import { authorizePermission, ROLE_PERMISSIONS } from "../src/middleware/authMiddleware.js";
+import { logout } from "../src/controllers/authController.js";
+import { AUTH_COOKIE, authCookieOptions } from "../src/utils/authCookie.js";
 
 test("login schema accepts valid credentials and rejects extra fields", () => {
   assert.equal(loginSchema.safeParse({ email: "person@example.com", password: "valid-password" }).success, true);
@@ -38,4 +40,13 @@ test("permission middleware rejects missing roles and allows an authorized role"
   };
   assert.deepEqual(run({ role: "STAFF" }, "sales:write"), { next: false, status: 403 });
   assert.deepEqual(run({ role: "MANAGER" }, "sales:write"), { next: true, status: undefined });
+});
+
+test("logout clears the httpOnly session cookie without requiring a live token", () => {
+  let cleared;
+  const result = logout({}, { clearCookie(name, options) { cleared = { name, options }; return this; }, status(code) { this.code = code; return this; }, json(body) { this.body = body; return this; } });
+  assert.equal(cleared.name, AUTH_COOKIE);
+  assert.deepEqual(cleared.options, authCookieOptions());
+  assert.equal(result.code, 200);
+  assert.deepEqual(result.body, { success: true, message: "Logged out" });
 });

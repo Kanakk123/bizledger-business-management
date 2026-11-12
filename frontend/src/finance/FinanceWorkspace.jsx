@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api.js'
+import { fetchInvoicePdf } from './invoicePdfClient.js'
 import './finance.css'
 
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
@@ -86,10 +87,24 @@ export default function FinanceWorkspace({ kind, user }) {
   }
   async function downloadPdf(invoice) {
     try {
-      const response = await fetch(`${API_URL}/api/invoices/${invoice.id}/pdf`, { credentials: 'include' })
-      if (!response.ok) throw new Error('Could not download this invoice PDF.')
-      const url = URL.createObjectURL(await response.blob()); const a = document.createElement('a'); a.href = url; a.download = `${invoice.invoiceNumber}.pdf`; a.click(); URL.revokeObjectURL(url)
+      const blob = await fetchInvoicePdf(invoice.id, API_URL)
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${invoice.invoiceNumber}.pdf`; a.click()
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch (e) { setError(e.message) }
+  }
+  async function printPdf(invoice) {
+    const preview = window.open('about:blank', '_blank')
+    if (!preview) { setError('Allow pop-ups to open the invoice print preview.'); return }
+    setError('')
+    try {
+      const blob = await fetchInvoicePdf(invoice.id, API_URL)
+      const url = URL.createObjectURL(blob)
+      preview.location.replace(url)
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch (e) {
+      preview.close()
+      setError(e.message)
+    }
   }
 
   return <section className="page-content finance-page">
@@ -103,7 +118,7 @@ export default function FinanceWorkspace({ kind, user }) {
     {busy ? <div className="finance-state">Loading {kind.toLowerCase()}…</div> : items.length === 0 ? <div className="finance-state">No {kind.toLowerCase()} found. Invoices are created from their purchase or sales order.</div> : <div className="finance-table-wrap"><table className="finance-table"><thead><tr>{paymentsPage ? <><th>Invoice</th><th>Date</th><th>Method</th><th>Reference</th><th>Amount</th></> : <><th>Invoice</th><th>Type</th><th>Partner</th><th>Date due</th><th>Status</th><th>Total</th><th>Outstanding</th></>}</tr></thead><tbody>{items.map((item) => <tr key={item.id} onClick={() => open(item)} tabIndex="0" onKeyDown={(e) => e.key === 'Enter' && open(item)}>{paymentsPage ? <><td>{item.invoice.invoiceNumber}</td><td>{date(item.paymentDate)}</td><td>{item.method}</td><td>{item.transactionReference || '—'}</td><td>{money(item.amount)}</td></> : <><td>{item.invoiceNumber}</td><td>{item.type}</td><td>{item.partnerName || (item.type === 'PURCHASE' ? item.purchaseOrder?.supplier?.name : item.salesOrder?.buyer?.name) || '—'}</td><td>{date(item.dueDate)}</td><td><span className={`finance-status status-${item.status.toLowerCase()}`}>{item.status.replace('_', ' ')}</span></td><td>{money(item.totalAmount)}</td><td>{money(item.outstandingAmount)}</td></>}</tr>)}</tbody></table></div>}
     <div className="finance-pagination"><span>{pagination ? `${pagination.total} records` : ''}</span><div><button disabled={page <= 1} onClick={() => setPage((v) => v - 1)}>Previous</button><span>Page {page} of {Math.max(1, pagination?.totalPages || 1)}</span><button disabled={!pagination || page >= pagination.totalPages} onClick={() => setPage((v) => v + 1)}>Next</button></div></div>
     {selected && <div className="finance-overlay" role="presentation" onClick={() => setSelected(null)}><section className="finance-detail" role="dialog" aria-modal="true" aria-label="Financial record" onClick={(e) => e.stopPropagation()}><button className="finance-close" onClick={() => setSelected(null)} aria-label="Close">×</button>
-      {paymentsPage ? <><p className="page-kicker">PAYMENT DETAIL</p><h2>{money(selected.amount)}</h2><p>{selected.invoice?.invoiceNumber} · {selected.method} · {date(selected.paymentDate)}</p><p>Reference: {selected.transactionReference || '—'}</p><h3>Audit history</h3>{(selected.auditHistory || []).map((entry) => <p key={entry.id}>{entry.action} · {date(entry.createdAt)}</p>)}</> : <><p className="page-kicker">{selected.type} INVOICE</p><h2>{selected.invoiceNumber}</h2><p>{selected.partnerName} {selected.partnerCompany && `· ${selected.partnerCompany}`}</p><p>{date(selected.invoiceDate)} · Due {date(selected.dueDate)} · {selected.status}</p><div className="finance-actions"><button onClick={() => downloadPdf(selected)}>Download PDF</button><button onClick={() => window.print()}>Print</button></div><h3>Items</h3><div className="invoice-lines">{selected.items.map((line) => <p key={line.id}>{line.productName} · {line.sku} · {line.description || ''} · {line.quantity} × {money(line.unitPrice)} · discount {money(line.discountAmount)} · tax {money(line.taxAmount)} · {money(line.lineTotal)}</p>)}</div><p>Subtotal {money(selected.subtotal)} · Discount {money(selected.discountTotal)} · Tax {money(selected.taxTotal)} · Charges {money(selected.additionalCharges)}</p><strong>Total {money(selected.totalAmount)} · Paid {money(selected.paidAmount)} · Due {money(selected.outstandingAmount)}</strong><h3>Payment history</h3>{selected.payments.length ? selected.payments.map((p) => <p key={p.id}>{date(p.paymentDate)} · {p.method} · {money(p.amount)} · {p.transactionReference || '—'}</p>) : <p>No payments recorded yet.</p>}
+      {paymentsPage ? <><p className="page-kicker">PAYMENT DETAIL</p><h2>{money(selected.amount)}</h2><p>{selected.invoice?.invoiceNumber} · {selected.method} · {date(selected.paymentDate)}</p><p>Reference: {selected.transactionReference || '—'}</p><h3>Audit history</h3>{(selected.auditHistory || []).map((entry) => <p key={entry.id}>{entry.action} · {date(entry.createdAt)}</p>)}</> : <><p className="page-kicker">{selected.type} INVOICE</p><h2>{selected.invoiceNumber}</h2><p>{selected.partnerName} {selected.partnerCompany && `· ${selected.partnerCompany}`}</p><p>{date(selected.invoiceDate)} · Due {date(selected.dueDate)} · {selected.status}</p><div className="finance-actions"><button onClick={() => downloadPdf(selected)}>Download PDF</button><button onClick={() => printPdf(selected)}>Print</button></div><h3>Items</h3><div className="invoice-lines">{selected.items.map((line) => <p key={line.id}>{line.productName} · {line.sku} · {line.description || ''} · {line.quantity} × {money(line.unitPrice)} · discount {money(line.discountAmount)} · tax {money(line.taxAmount)} · {money(line.lineTotal)}</p>)}</div><p>Subtotal {money(selected.subtotal)} · Discount {money(selected.discountTotal)} · Tax {money(selected.taxTotal)} · Charges {money(selected.additionalCharges)}</p><strong>Total {money(selected.totalAmount)} · Paid {money(selected.paidAmount)} · Due {money(selected.outstandingAmount)}</strong><h3>Payment history</h3>{selected.payments.length ? selected.payments.map((p) => <p key={p.id}>{date(p.paymentDate)} · {p.method} · {money(p.amount)} · {p.transactionReference || '—'}</p>) : <p>No payments recorded yet.</p>}
         {writable(user) && <div className="invoice-meta"><h3>Invoice terms and notes</h3><label>Due date<input type="date" value={metadata.dueDate} onChange={(e) => setMetadata({ ...metadata, dueDate: e.target.value })} /></label><label>Payment terms<input maxLength="100" value={metadata.paymentTerms} onChange={(e) => setMetadata({ ...metadata, paymentTerms: e.target.value })} /></label><label>Notes<textarea rows="3" value={metadata.notes} onChange={(e) => setMetadata({ ...metadata, notes: e.target.value })} /></label><button onClick={saveMetadata}>Save invoice details</button></div>}
         {writable(user) && Number(selected.outstandingAmount) > 0 && <form className="payment-form" onSubmit={recordPayment}><h3>Record a payment</h3><label>Amount<input required inputMode="decimal" value={form.amount} max={selected.outstandingAmount} onChange={(e) => { paymentKey.current = null; setForm({ ...form, amount: e.target.value }) }} /></label><label>Date<input required type="date" value={form.paymentDate} onChange={(e) => { paymentKey.current = null; setForm({ ...form, paymentDate: e.target.value }) }} /></label><label>Method<select value={form.method} onChange={(e) => { paymentKey.current = null; setForm({ ...form, method: e.target.value }) }}>{['CASH', 'BANK_TRANSFER', 'UPI', 'CARD', 'CHEQUE', 'OTHER'].map((m) => <option key={m}>{m}</option>)}</select></label><label>Reference<input value={form.transactionReference} maxLength="150" onChange={(e) => { paymentKey.current = null; setForm({ ...form, transactionReference: e.target.value }) }} /></label><button type="submit" disabled={savingPayment}>{savingPayment ? 'Saving…' : 'Save payment'}</button></form>}
       </>}
