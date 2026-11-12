@@ -1,0 +1,7 @@
+.sales-page .purchase-breakdown { min-width: 830px; }
+.sales-page .purchase-receipt { margin: 0; }
+.sales-page .purchase-actions-card > .button-outline:not(.purchase-cancel) { color: #55755c; }
+.sales-page .purchase-actions-card > .button-primary { background: #5c7b61; }
+.sales-page .purchase-receive-row input:focus { border-color: #91a88f; box-shadow: 0 0 0 2px #e8efe5; }
+.sales-page .purchase-receipts { display: flex; flex-direction: column; }
+@media (max-width: 650px) { .sales-page .purchase-breakdown { min-width: 850px; } }

@@ -22,6 +22,7 @@ import productRoutes from "./routes/productRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import { createPartnerRouter } from "./routes/partnerRoutes.js";
 import purchaseOrderRoutes from "./routes/purchaseOrderRoutes.js";
+import salesOrderRoutes from "./routes/salesOrderRoutes.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
@@ -60,6 +61,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/suppliers", createPartnerRouter("supplier"));
 app.use("/api/buyers", createPartnerRouter("buyer"));
 app.use("/api/purchases", purchaseOrderRoutes);
+app.use("/api/sales", salesOrderRoutes);
 
 // ── 404 ─────────────────────────────────────────────────────────────────────
 app.use((_req, res) => {

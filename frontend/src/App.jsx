@@ -3,6 +3,7 @@ import { api } from './lib/api.js'
 import ProductsWorkspace from './products/ProductsWorkspace.jsx'
 import PartnersWorkspace from './partners/PartnersWorkspace.jsx'
 import PurchaseOrdersWorkspace from './purchases/PurchaseOrdersWorkspace.jsx'
+import SalesOrdersWorkspace from './sales/SalesOrdersWorkspace.jsx'
 import './App.css'
 
 const sections = [
@@ -91,6 +92,7 @@ function AppShell({ user, onLogout }) {
     || (path.startsWith('/suppliers/') ? sections[2] : null)
     || (path.startsWith('/buyers/') ? sections[3] : null)
     || (path.startsWith('/purchases/') ? sections[4] : null)
+    || (path.startsWith('/sales/') ? sections[5] : null)
     || sections[0]
 
   useEffect(() => {
@@ -130,6 +132,7 @@ function AppShell({ user, onLogout }) {
       {active.name === 'Products' ? <ProductsWorkspace path={path} navigate={navigate} user={user} />
         : ['Suppliers', 'Buyers'].includes(active.name) ? <PartnersWorkspace kind={active.name.toLowerCase().slice(0, -1)} path={path} navigate={navigate} user={user} />
           : active.name === 'Purchases' ? <PurchaseOrdersWorkspace path={path} navigate={navigate} user={user} />
+            : active.name === 'Sales' ? <SalesOrdersWorkspace path={path} navigate={navigate} user={user} />
         : <section className="page-content"><div className="page-heading"><div><p className="page-kicker">YOUR WORKSPACE&nbsp; / &nbsp;{active.name.toUpperCase()}</p><h1>{active.name === 'Dashboard' ? `Good to have you here, ${user.name.split(' ')[0]}.` : active.name}</h1><p className="page-subtitle">{active.name === 'Dashboard' ? 'A little more clarity for the work ahead.' : `Your ${active.name.toLowerCase()} workspace.`}</p></div><div className="date-chip"><span>◷</span> {new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date())}</div></div>
         <div className="welcome-card"><div className="welcome-copy"><span className="welcome-label"><span /> WORKSPACE READY</span><h2>{active.name === 'Dashboard' ? 'Your business, coming into focus.' : `${active.name} will feel at home here.`}</h2><p>Sign-in is connected and your workspace is ready. This area will come alive as the BizLedger features are added.</p><div className="welcome-actions"><span className="role-badge">{user.role}</span><span className="welcome-secure">◈&nbsp; Private workspace</span></div></div><div className="welcome-art" aria-hidden="true"><div className="art-ring ring-back"/><div className="art-ring ring-front"/><div className="art-sun"/><div className="art-hill hill-back"/><div className="art-hill hill-front"/><div className="art-stem"/><div className="art-leaf leaf-left"/><div className="art-leaf leaf-right"/><span className="art-star star-a">✳</span><span className="art-star star-b">✦</span></div></div>
         <div className="section-row"><div><h2>Everything in its place</h2><p>Your tools, ready when you are.</p></div><span className="section-count">{sections.length} AREAS</span></div>
