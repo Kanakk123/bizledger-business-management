@@ -20,6 +20,7 @@ import { prisma } from "./config/prisma.js";
 import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
+import { createPartnerRouter } from "./routes/partnerRoutes.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
@@ -55,6 +56,8 @@ app.get("/api/health", async (_req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/suppliers", createPartnerRouter("supplier"));
+app.use("/api/buyers", createPartnerRouter("buyer"));
 
 // ── 404 ─────────────────────────────────────────────────────────────────────
 app.use((_req, res) => {

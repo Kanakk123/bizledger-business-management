@@ -141,8 +141,13 @@ model Supplier {
   email          String?       @db.VarChar(150)
   phone          String?       @db.VarChar(20)
   address        String?       @db.Text
+  city           String?       @db.VarChar(100)
+  state          String?       @db.VarChar(100)
+  postalCode     String?       @map("postal_code") @db.VarChar(30)
+  country        String?       @db.VarChar(100)
   taxRegistration String?      @map("tax_registration") @db.VarChar(50)
   paymentTerms   String?       @map("payment_terms") @db.VarChar(100)
+  notes          String?       @db.Text
   status         PartnerStatus @default(ACTIVE)
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
@@ -160,7 +165,12 @@ model Buyer {
   phone           String?       @db.VarChar(20)
   billingAddress  String?       @map("billing_address") @db.Text
   shippingAddress String?       @map("shipping_address") @db.Text
+  city            String?       @db.VarChar(100)
+  state           String?       @db.VarChar(100)
+  postalCode      String?       @map("postal_code") @db.VarChar(30)
+  country         String?       @db.VarChar(100)
   taxRegistration String?       @map("tax_registration") @db.VarChar(50)
+  notes           String?       @db.Text
   status          PartnerStatus @default(ACTIVE)
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
