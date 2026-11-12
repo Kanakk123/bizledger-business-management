@@ -5,6 +5,7 @@ import PartnersWorkspace from './partners/PartnersWorkspace.jsx'
 import PurchaseOrdersWorkspace from './purchases/PurchaseOrdersWorkspace.jsx'
 import SalesOrdersWorkspace from './sales/SalesOrdersWorkspace.jsx'
 import FinanceWorkspace from './finance/FinanceWorkspace.jsx'
+import InsightsWorkspace from './insights/InsightsWorkspace.jsx'
 import './App.css'
 
 const sections = [
@@ -16,6 +17,7 @@ const sections = [
   { name: 'Sales', path: '/sales', icon: '↗', permission: 'sales:read' },
   { name: 'Invoices', path: '/invoices', icon: '▤', permission: 'invoices:read' },
   { name: 'Payments', path: '/payments', icon: '＄', permission: 'payments:read' },
+  { name: 'Analytics', path: '/analytics', icon: '⌁', permission: 'reports:read' },
   { name: 'Reports', path: '/reports', icon: '▥', permission: 'reports:read' },
 ]
 
@@ -135,6 +137,7 @@ function AppShell({ user, onLogout }) {
           : active.name === 'Purchases' ? <PurchaseOrdersWorkspace path={path} navigate={navigate} user={user} />
             : active.name === 'Sales' ? <SalesOrdersWorkspace path={path} navigate={navigate} user={user} />
         : ['Invoices', 'Payments'].includes(active.name) ? <FinanceWorkspace kind={active.name} user={user} />
+        : ['Dashboard', 'Analytics', 'Reports'].includes(active.name) ? <InsightsWorkspace kind={active.name} />
         : <section className="page-content"><div className="page-heading"><div><p className="page-kicker">YOUR WORKSPACE&nbsp; / &nbsp;{active.name.toUpperCase()}</p><h1>{active.name === 'Dashboard' ? `Good to have you here, ${user.name.split(' ')[0]}.` : active.name}</h1><p className="page-subtitle">{active.name === 'Dashboard' ? 'A little more clarity for the work ahead.' : `Your ${active.name.toLowerCase()} workspace.`}</p></div><div className="date-chip"><span>◷</span> {new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date())}</div></div>
         <div className="welcome-card"><div className="welcome-copy"><span className="welcome-label"><span /> WORKSPACE READY</span><h2>{active.name === 'Dashboard' ? 'Your business, coming into focus.' : `${active.name} will feel at home here.`}</h2><p>Sign-in is connected and your workspace is ready. This area will come alive as the BizLedger features are added.</p><div className="welcome-actions"><span className="role-badge">{user.role}</span><span className="welcome-secure">◈&nbsp; Private workspace</span></div></div><div className="welcome-art" aria-hidden="true"><div className="art-ring ring-back"/><div className="art-ring ring-front"/><div className="art-sun"/><div className="art-hill hill-back"/><div className="art-hill hill-front"/><div className="art-stem"/><div className="art-leaf leaf-left"/><div className="art-leaf leaf-right"/><span className="art-star star-a">✳</span><span className="art-star star-b">✦</span></div></div>
         <div className="section-row"><div><h2>Everything in its place</h2><p>Your tools, ready when you are.</p></div><span className="section-count">{sections.length} AREAS</span></div>

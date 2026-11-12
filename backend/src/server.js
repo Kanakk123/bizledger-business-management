@@ -25,6 +25,7 @@ import purchaseOrderRoutes from "./routes/purchaseOrderRoutes.js";
 import salesOrderRoutes from "./routes/salesOrderRoutes.js";
 import invoiceRoutes from "./routes/invoiceRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import analyticsRoutes from "./routes/analyticsRoutes.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
@@ -66,6 +67,7 @@ app.use("/api/purchases", purchaseOrderRoutes);
 app.use("/api/sales", salesOrderRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api", analyticsRoutes);
 
 // ── 404 ─────────────────────────────────────────────────────────────────────
 app.use((_req, res) => {
