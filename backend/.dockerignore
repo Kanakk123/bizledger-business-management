@@ -1,0 +1,7 @@
+.env
+.env.*
+node_modules
+src/generated/prisma
+coverage
+*.log
+test

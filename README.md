@@ -213,6 +213,68 @@ npm run build
 npm run preview
 ```
 
+## Docker deployment
+
+### Prerequisites
+
+- Docker Desktop for Windows with the Docker Compose plugin enabled.
+- A free local port for the web app (`8080` by default) and MySQL (`3307` by default).
+
+The Compose stack builds the React/Vite production bundle and serves it through unprivileged Nginx. Nginx proxies `/api` to Express over the Compose network. The backend uses the MySQL service hostname `mysql`, waits for its health check, and has its own API/database health check. MySQL data is stored in the named `mysql_data` volume.
+
+### Configure and start
+
+Run these commands from the repository root in PowerShell:
+
+```powershell
+Copy-Item .\.env.example .\.env
+```
+
+Edit the root `.env`. Replace the database and JWT placeholders with unique values. Keep `DATABASE_URL` synchronized with `MYSQL_DATABASE`, `MYSQL_USER` and `MYSQL_PASSWORD`; its host must remain `mysql` for container-to-container database access. Use URL-safe characters in `MYSQL_PASSWORD` unless you URL-encode them in `DATABASE_URL`.
+
+Apply the existing Prisma migrations, then build and start the stack:
+
+```powershell
+docker compose run --rm migrate
+docker compose up --build -d
+docker compose ps
+```
+
+Open `http://localhost:8080` (or the port set in `FRONTEND_PORT`). Check API and database health at `http://localhost:8080/api/health`; check frontend container health with `docker compose ps`.
+
+The local Compose default is `NODE_ENV=development` so the HTTP-only session cookie works over local HTTP. For a public deployment, set `NODE_ENV=production` and put the stack behind HTTPS/TLS termination; production cookies are marked secure. Configure `FRONTEND_ORIGIN` to the exact browser origin used to access the app.
+
+### Admin seed
+
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the root `.env` (the seed requires at least 12 password characters). With the stack running, execute:
+
+```powershell
+docker compose exec backend node prisma/seed.js
+```
+
+The seed creates an admin if the email is new and preserves account details if it already exists; it does not reset passwords. Use a fresh email for a new local admin account.
+
+### Stop and troubleshoot
+
+Stop containers while preserving the MySQL data volume:
+
+```powershell
+docker compose down
+```
+
+View service status and logs:
+
+```powershell
+docker compose ps
+docker compose logs -f mysql
+docker compose logs -f backend
+docker compose logs -f frontend
+```
+
+If a host port is occupied, change `FRONTEND_PORT` or `MYSQL_PORT` in `.env`. If the backend cannot connect to MySQL, confirm its `DB_HOST` is the Compose service name `mysql` (the Compose file sets this), verify the `.env` database credentials and `DATABASE_URL`, then inspect MySQL health and logs. If migrations are pending, rerun `docker compose run --rm migrate`; it runs the repository's existing `npm run db:migrate` (`prisma migrate deploy`) and does not reset the database. A failed frontend build should be diagnosed from `docker compose build frontend` output.
+
+The Dockerfiles use the existing package lockfiles and scripts. The backend image generates the Prisma 7 client during image build and keeps the Prisma CLI in a separate migration target; the API runtime image contains production dependencies only.
+
 ## Tests and quality checks
 
 Backend tests use Node's built-in test runner and are defined by `npm test`:
@@ -283,6 +345,5 @@ bizledger/
 These are potential next steps, not features represented as currently implemented:
 
 - Add screenshots captured from a seeded local demo environment.
-- Add Docker and compose-based local setup if containerized deployment is desired.
 - Add browser-level end-to-end tests for the principal workflows.
 - Add a deployment guide and production operations documentation for a chosen hosting environment.
