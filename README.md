@@ -4,8 +4,6 @@
 
 BizLedger is a full-stack application for managing the day-to-day flow of a small business: maintain a product catalogue, manage suppliers and buyers, process purchase and sales orders, track stock movements, issue invoices, record payments, and review business performance.
 
-> Portfolio note: screenshots below are intentionally placeholders. Replace them with captures from a running BizLedger instance before publishing a portfolio version.
-
 ## Contents
 
 - [Features](#features)
@@ -343,10 +341,9 @@ bizledger/
     └── test/                # Frontend regression tests
 ```
 
-## Future improvements
+## Future Improvements
 
 These are potential next steps, not features represented as currently implemented:
 
-- Add screenshots captured from a seeded local demo environment.
 - Add browser-level end-to-end tests for the principal workflows.
 - Add a deployment guide and production operations documentation for a chosen hosting environment.
