@@ -81,17 +81,20 @@ The frontend communicates with the Express JSON API under `/api`. During local V
 
 ## Screenshots
 
-Add screenshots from your own running environment. No screenshots are included in this repository yet.
+### Dashboard
+![BizLedger Dashboard](screenshots/dashboard.png)
 
-| Dashboard | Products and inventory |
-| --- | --- |
-| `![Dashboard screenshot](docs/screenshots/dashboard.png)` | `![Products screenshot](docs/screenshots/products.png)` |
+### Products and Inventory
+![Products and Inventory](screenshots/products.png)
 
-| Purchase and sales orders | Invoice and payments |
-| --- | --- |
-| `![Orders screenshot](docs/screenshots/orders.png)` | `![Finance screenshot](docs/screenshots/finance.png)` |
+### Invoices and Payments
+![Invoices and Payments](screenshots/invoices.png)
 
-The image references above are placeholders. Add the corresponding image files under `docs/screenshots/` or replace the references with the locations you choose.
+### Analytics
+![BizLedger Analytics](screenshots/analytics.png)
+
+### User Management
+![User Management](screenshots/users.png)
 
 ## Database overview
 
